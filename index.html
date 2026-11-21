@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda de Productos</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; background-color: #f4f4f9; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        input[type="text"], input[type="number"], input[type="password"], input[type="file"], select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #fff;
+        }
+        button { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; width: 100%; margin-top: 10px; border-radius: 4px; }
+        .variant-row { background: #fff; padding: 10px; margin-top: 10px; display: flex; gap: 10px; align-items: center; border: 1px solid #eee; flex-wrap: wrap; border-radius: 6px; }
+        .variant-row > div { flex: 1; min-width: 130px; }
+        .preview-box { flex: 0 0 auto !important; min-width: auto !important; }
+        .upload-preview { width: 64px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; }
+        .product-card { background: white; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .variant-list { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px; }
+        .variant-item { text-align: center; border: 1px solid #ddd; padding: 10px; border-radius: 6px; background: #fafafa; position: relative; display: flex; flex-direction: column; align-items: center; width: 155px; }
+        .variant-img { width: 120px; height: 120px; object-fit: cover; display: block; border-radius: 4px; cursor: zoom-in; transition: transform 0.2s; }
+        .variant-img:hover { transform: scale(1.03); }
+        .variant-title { font-weight: bold; margin-top: 8px; font-size: 0.95em; color: #222; word-break: break-word; }
+        .variant-category {
+            margin-top: 5px;
+            font-size: 0.78em;
+            font-weight: bold;
+            color: #495057;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .price { color: #28a745; font-size: 1.15em; font-weight: bold; margin-top: 5px; }
+        .sold-out-badge { position: absolute; top: 10px; left: 10px; right: 10px; background: rgba(220, 53, 69, 0.9); color: white; padding: 5px; font-weight: bold; border-radius: 4px; pointer-events: none; z-index: 2; }
+        #adminAuthBox, #adminSection { display: none; background: #e9ecef; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .admin-btn { background: #007bff; width: auto; margin-top: 0; }
+        .auth-error { color: #dc3545; font-weight: bold; font-size: 0.9em; margin-top: 8px; display: none; }
+        .admin-product-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 12px 14px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .admin-product-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .admin-variants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .admin-variant-card {
+            border: 1px solid #e0e0e0;
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 140px;
+            text-align: center;
+            gap: 5px;
+        }
+        .admin-variant-thumb {
+            width: 72px;
+            height: 72px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .admin-variant-name {
+            font-size: 0.85em;
+            font-weight: bold;
+            word-break: break-word;
+        }
+        .admin-variant-cat {
+            font-size: 0.76em;
+            color: #555;
+        }
+        .toggle-status-btn {
+            width: 100%;
+            margin-top: 0;
+            padding: 6px 8px;
+            font-size: 0.8em;
+            font-weight: bold;
+            background: #28a745;
+        }
+        .toggle-status-btn.is-soldout {
+            background: #dc3545;
+        }
+        .delete-btn {
+            background: #dc3545;
+            width: auto;
+            margin-top: 0;
+            padding: 8px 14px;
+            font-weight: bold;
+        }
+        .helper-text {
+            font-size: 0.88em;
+            color: #555;
+            margin-top: 4px;
+        }
+        .catalog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            width: auto;
+            margin-top: 0;
+            padding: 7px 14px;
+            background: #6c757d;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .filter-btn.active {
+            background: #007bff;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+            gap: 12px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            max-width: 92%;
+            max-height: 70vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .modal-product-info {
+            color: #ffffff;
+            text-align: center;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+        .modal-close {
+            position: fixed;
+            top: 14px;
+            right: 22px;
+            color: white;
+            font-size: 38px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            line-height: 1;
+        }
+        .whatsapp-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #25D366;
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.08em;
+            padding: 12px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+            transition: background-color 0.2s, transform 0.2s;
+            flex-shrink: 0;
+        }
+        .whatsapp-btn:hover {
+            background-color: #1ebe5d;
+            transform: scale(1.03);
+        }
+        .wa-icon {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Mi Tienda</h1>
+    <button type="button" id="adminToggleBtn" class="admin-btn">Admin</button>
+</header>
+
+<div id="adminAuthBox">
+    <h3>Acceso de Administrador</h3>
+    <div class="form-group">
+        <label for="adminPasswordInput">Contraseña:</label>
+        <input type="password" id="adminPasswordInput" placeholder="Escribe la contraseña">
+        <div id="adminAuthError" class="auth-error">Contraseña incorrecta.</div>
+    </div>
+    <button type="button" id="adminLoginBtn">Entrar</button>
+</div>
+
+<div id="adminSection">
+    <h2>Panel de Administración</h2>
+    <div class="product-card">
+        <div class="form-group">
+            <label for="multiPhotosInput">Seleccionar varias fotos:</label>
+            <input type="file" id="multiPhotosInput" accept="image/*" multiple>
+            <div class="helper-text">Elige una o varias imágenes; a cada una asígnale su nombre, categoría (Hombre, Mujer o Unisex) y precio en Lempiras (L).</div>
+        </div>
+
+        <h4>Productos por Guardar</h4>
+        <div id="variantsContainer"></div>
+        <button type="button" id="saveProductBtn">Guardar Productos en Tienda</button>
+    </div>
+
+    <div class="product-card">
+        <h3>Administrar Productos Guardados</h3>
+        <div id="adminProductList"></div>
+    </div>
+</div>
+
+<div class="catalog-header">
+    <h2 style="margin: 0;">Catálogo</h2>
+    <div class="filter-buttons" id="categoryFilterBar">
+        <button type="button" class="filter-btn active" data-filter="Todos">Todos</button>
+        <button type="button" class="filter-btn" data-filter="Hombre">Hombre</button>
+        <button type="button" class="filter-btn" data-filter="Mujer">Mujer</button>
+        <button type="button" class="filter-btn" data-filter="Unisex">Unisex</button>
+    </div>
+</div>
+<div id="publicCatalog"></div>
+
+<div id="imageModal" class="modal-overlay">
+    <span class="modal-close" id="modalCloseBtn">&times;</span>
+    <img class="modal-content" id="modalImg" alt="Vista ampliada del producto">
+    <div class="modal-product-info" id="modalProductInfo"></div>
+    <a id="whatsappContactLink"
+       href="https://wa.me/50431976839"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="whatsapp-btn">
+        <svg class="wa-icon" viewBox="0 0 32 32" fill="currentColor" aria-hidden="true">
+            <path d="M16.004 2.667C8.64 2.667 2.667 8.64 2.667 16.004c0 2.352.613 4.648 1.779 6.672L2.56 29.333l6.827-1.792a13.27 13.27 0 0 0 6.617 1.76c7.365 0 13.338-5.973 13.338-13.338 0-7.364-5.973-13.296-13.338-13.296zm7.765 18.88c-.325.917-1.888 1.755-2.613 1.867-.667.107-1.509.15-2.432-.144a22.3 22.3 0 0 1-2.2-.811c-3.872-1.675-6.4-5.584-6.597-5.845-.197-.261-1.579-2.101-1.579-4.011s1.003-2.848 1.36-3.237c.357-.389.779-.485 1.035-.485.256 0 .512.005.736.016.235.011.555-.091.869.661.325.784 1.104 2.688 1.2 2.885.096.197.16.427.032.683-.128.261-.192.421-.384.645-.192.224-.405.501-.576.672-.192.192-.389.4-.165.784.224.384.997 1.648 2.144 2.672 1.472 1.312 2.715 1.717 3.099 1.909.384.192.608.16.832-.096.224-.256.96-1.12 1.216-1.504.256-.384.512-.32.864-.192.352.128 2.24 1.056 2.624 1.248.384.192.64.288.736.448.096.16.096.928-.229 1.845z"/>
+        </svg>
+        <span>Más información</span>
+    </a>
+</div>
+
+<script>
+(function () {
+    const WHATSAPP_NUMBER = '50431976839';
+    let selectedCategoryFilter = 'Todos';
+    let isAdminAuthenticated = false;
+
+    function getSafeInventory() {
+        try {
+            const raw = localStorage.getItem('tiendaInventario');
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+            return [];
+        }
+    }
+
+    function saveSafeInventory(inventario) {
+        try {
+            localStorage.setItem('tiendaInventario', JSON.stringify(inventario));
+            return true;
+        } catch (err) {
+            alert('Error: Las imágenes son muy pesadas para el almacenamiento local. Intenta con imágenes más ligeras.');
+            return false;
+        }
+    }
+
+    function formatPrice(precio) {
+        const num = Number(precio);
+        if (!Number.isNaN(num)) {
+            return `L ${num.toLocaleString('es-HN', { minimumFractionDigits: Number.isInteger(num) ? 0 : 2, maximumFractionDigits: 2 })}`;
+        }
+        return `L ${precio}`;
+    }
+
+    function toggleAdminView() {
+        const authBox = document.getElementById('adminAuthBox');
+        const adminSection = document.getElementById('adminSection');
+        const errorEl = document.getElementById('adminAuthError');
+        const inputEl = document.getElementById('adminPasswordInput');
+
+        if (!authBox || !adminSection) return;
+
+        if (isAdminAuthenticated) {
+            const sectionOpen = adminSection.style.display === 'block';
+            adminSection.style.display = sectionOpen ? 'none' : 'block';
+            if (!sectionOpen) {
+                renderAdminProducts();
+                adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
+        }
+
+        const authOpen = authBox.style.display === 'block';
+        if (authOpen) {
+            authBox.style.display = 'none';
+        } else {
+            authBox.style.display = 'block';
+            if (errorEl) errorEl.style.display = 'none';
+            if (inputEl) {
+                inputEl.value = '';
+                inputEl.focus();
+            }
+            authBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    function verifyAdminPassword() {
+        const inputEl = document.getElementById('adminPasswordInput');
+        const errorEl = document.getElementById('adminAuthError');
+        const authBox = document.getElementById('adminAuthBox');
+        const adminSection = document.getElementById('adminSection');
+        const password = inputEl ? inputEl.value : '';
+
+        if (password === 'Maycol1998') {
+            isAdminAuthenticated = true;
+            if (errorEl) errorEl.style.display = 'none';
+            if (authBox) authBox.style.display = 'none';
+            if (adminSection) {
+                adminSection.style.display = 'block';
+                renderAdminProducts();
+                adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } else if (errorEl) {
+            errorEl.style.display = 'block';
+        }
+    }
+
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleMultiplePhotos(fileInput) {
+        const container = document.getElementById('variantsContainer');
+        if (!container) return;
+
+        const files = Array.from(fileInput.files || []);
+        if (files.length === 0) return;
+
+        for (const file of files) {
+            const base64Image = await readFileAsBase64(file);
+            const row = document.createElement('div');
+            row.className = 'variant-row';
+            row.dataset.imagen = base64Image;
+
+            row.innerHTML = `
+                <div class="preview-box">
+                    <img src="${base64Image}" class="upload-preview" alt="Vista previa">
+                </div>
+                <div>
+                    <input type="text" placeholder="Nombre del producto" class="var-nombre">
+                </div>
+                <div>
+                    <select class="var-categoria" aria-label="Categoría">
+                        <option value="Hombre">Hombre</option>
+                        <option value="Mujer">Mujer</option>
+                        <option value="Unisex">Unisex</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="number" step="any" placeholder="Precio en Lempiras (L)" class="var-precio">
+                </div>
+                <button type="button" class="remove-row-btn" style="width: auto; background: #dc3545; padding: 5px 10px; margin-top: 0;">X</button>
+            `;
+
+            row.querySelector('.remove-row-btn').addEventListener('click', () => {
+                row.remove();
+            });
+
+            container.appendChild(row);
+        }
+
+        fileInput.value = '';
+    }
+
+    function saveProduct() {
+        const rows = Array.from(document.querySelectorAll('#variantsContainer .variant-row'));
+
+        if (rows.length === 0) {
+            alert('Selecciona al menos una foto para agregar el producto');
+            return;
+        }
+
+        const nuevosProductos = [];
+        for (const row of rows) {
+            const imagen = row.dataset.imagen;
+            const nombreInput = row.querySelector('.var-nombre');
+            const catSelect = row.querySelector('.var-categoria');
+            const precioInput = row.querySelector('.var-precio');
+
+            const nombre = nombreInput ? nombreInput.value.trim() : '';
+            const categoria = catSelect ? catSelect.value : 'Unisex';
+            const precio = precioInput ? precioInput.value.trim() : '';
+
+            if (imagen && nombre && precio) {
+                nuevosProductos.push({
+                    nombre,
+                    categoria,
+                    variantes: [{
+                        nombre,
+                        categoria,
+                        imagen,
+                        precio,
+                        agotado: false
+                    }]
+                });
+            }
+        }
+
+        if (nuevosProductos.length === 0) {
+            alert('A cada foto ponle su nombre y su precio en Lempiras (L) antes de guardar');
+            return;
+        }
+
+        const inventario = getSafeInventory().concat(nuevosProductos);
+        if (!saveSafeInventory(inventario)) return;
+
+        const multiInput = document.getElementById('multiPhotosInput');
+        const variantsContainer = document.getElementById('variantsContainer');
+        if (multiInput) multiInput.value = '';
+        if (variantsContainer) variantsContainer.innerHTML = '';
+
+        renderCatalog();
+        renderAdminProducts();
+        alert('Productos guardados exitosamente');
+    }
+
+    function toggleVariantSoldOut(prodIndex, varIndex) {
+        const inventario = getSafeInventory();
+        if (!inventario[prodIndex] || !inventario[prodIndex].variantes || !inventario[prodIndex].variantes[varIndex]) {
+            return;
+        }
+
+        inventario[prodIndex].variantes[varIndex].agotado = !inventario[prodIndex].variantes[varIndex].agotado;
+        if (saveSafeInventory(inventario)) {
+            renderCatalog();
+            renderAdminProducts();
+        }
+    }
+
+    function deleteProduct(index) {
+        const inventario = getSafeInventory();
+        if (index < 0 || index >= inventario.length) return;
+        inventario.splice(index, 1);
+        if (saveSafeInventory(inventario)) {
+            renderCatalog();
+            renderAdminProducts();
+        }
+    }
+
+    function renderAdminProducts() {
+        const listDiv = document.getElementById('adminProductList');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        const inventario = getSafeInventory();
+
+        if (inventario.length === 0) {
+            listDiv.innerHTML = '<p>No hay productos guardados para administrar.</p>';
+            return;
+        }
+
+        inventario.forEach((prod, prodIndex) => {
+            const box = document.createElement('div');
+            box.className = 'admin-product-box';
+
+            const header = document.createElement('div');
+            header.className = 'admin-product-header';
+
+            const titleWrap = document.createElement('div');
+            const strongTitle = document.createElement('strong');
+            strongTitle.textContent = prod.nombre || 'Producto';
+            titleWrap.appendChild(strongTitle);
+
+            const prodCategory = prod.categoria || (prod.variantes && prod.variantes[0] && prod.variantes[0].categoria) || '';
+            if (prodCategory) {
+                const catSpan = document.createElement('span');
+                catSpan.className = 'variant-category';
+                catSpan.style.marginLeft = '6px';
+                catSpan.textContent = prodCategory;
+                titleWrap.appendChild(catSpan);
+            }
+
+            const delBtn = document.createElement('button');
+                   delBtn.type = 'button';
+            delBtn.className = 'delete-btn';
+            delBtn.textContent = 'Eliminar';
+            delBtn.addEventListener('click', () => deleteProduct(prodIndex));
+
+            header.appendChild(titleWrap);
+            header.appendChild(delBtn);
+            box.appendChild(header);
+
+            const variantsWrap = document.createElement('div');
+            variantsWrap.className = 'admin-variants-list';
+
+            (prod.variantes || []).forEach((variante, varIndex) => {
+                const card = document.createElement('div');
+                card.className = 'admin-variant-card';
+
+                const thumb = document.createElement('img');
+                thumb.src = variante.imagen || '';
+                thumb.alt = variante.nombre || 'Variante';
+                thumb.className = 'admin-variant-thumb';
+
+                const vName = document.createElement('div');
+                vName.className = 'admin-variant-name';
+                vName.textContent = variante.nombre || prod.nombre || 'Producto';
+
+                const vCat = document.createElement('div');
+                vCat.className = 'admin-variant-cat';
+                vCat.textContent = `${variante.categoria || prodCategory || 'Unisex'} · ${formatPrice(variante.precio)}`;
+
+                const statusBtn = document.createElement('button');
+                statusBtn.type = 'button';
+                statusBtn.className = 'toggle-status-btn' + (variante.agotado ? ' is-soldout' : '');
+                statusBtn.textContent = variante.agotado ? 'Agotado' : 'Disponible';
+                statusBtn.addEventListener('click', () => toggleVariantSoldOut(prodIndex, varIndex));
+
+                card.appendChild(thumb);
+                card.appendChild(vName);
+                card.appendChild(vCat);
+                card.appendChild(statusBtn);
+                variantsWrap.appendChild(card);
+            });
+
+            box.appendChild(variantsWrap);
+            listDiv.appendChild(box);
+        });
+    }
+
+    function openImageModal(variante, fallbackNombre, fallbackCategoria) {
+        const modal = document.getElementById('imageModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalInfo = document.getElementById('modalProductInfo');
+        const waLink = document.getElementById('whatsappContactLink');
+
+        if (!modal || !modalImg) return;
+
+        const nombre = variante.nombre || fallbackNombre || 'Producto';
+        const categoria = variante.categoria || fallbackCategoria || 'Unisex';
+        const precioTexto = formatPrice(variante.precio);
+        const estadoTexto = variante.agotado ? ' (Agotado)' : '';
+
+        modalImg.src = variante.imagen || '';
+        modalImg.alt = nombre;
+
+        if (modalInfo) {
+            modalInfo.innerHTML = `<strong>${escapeHtml(nombre)}</strong>${escapeHtml(estadoTexto)}<br><span>${escapeHtml(categoria)} · ${escapeHtml(precioTexto)}</span>`;
+        }
+
+        if (waLink) {
+            const mensaje = `Hola, me gustaría más información sobre: ${nombre} (${categoria}) - ${precioTexto}`;
+            waLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+        const modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function renderCatalog() {
+        const catalogDiv = document.getElementById('publicCatalog');
+        if (!catalogDiv) return;
+
+        catalogDiv.innerHTML = '';
+        const inventario = getSafeInventory();
+
+        const filtrados = inventario.map((prod) => {
+            const prodCat = prod.categoria || (prod.variantes && prod.variantes[0] && prod.variantes[0].categoria) || 'Unisex';
+            const variantesFiltradas = (prod.variantes || []).filter((v) => {
+                if (selectedCategoryFilter === 'Todos') return true;
+                const vCat = v.categoria || prodCat;
+                return vCat === selectedCategoryFilter;
+            });
+
+            return {
+                ...prod,
+                categoria: prodCat,
+                variantes: variantesFiltradas
+            };
+        }).filter((prod) => prod.variantes.length > 0);
+
+        if (filtrados.length === 0) {
+            catalogDiv.innerHTML = `<div class="product-card"><p>No hay productos disponibles en la categoría "${escapeHtml(selectedCategoryFilter)}".</p></div>`;
+            return;
+        }
+
+        filtrados.forEach((prod) => {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+
+            const title = document.createElement('h3');
+            title.style.marginTop = '0';
+            title.textContent = prod.nombre || 'Producto';
+            card.appendChild(title);
+
+            const list = document.createElement('div');
+            list.className = 'variant-list';
+
+            prod.variantes.forEach((variante) => {
+                const item = document.createElement('div');
+                item.className = 'variant-item';
+
+                if (variante.agotado) {
+                    const badge = document.createElement('div');
+                    badge.className = 'sold-out-badge';
+                    badge.textContent = 'AGOTADO';
+                    item.appendChild(badge);
+                }
+
+                const img = document.createElement('img');
+                img.src = variante.imagen || '';
+                img.alt = variante.nombre || prod.nombre || 'Producto';
+                img.className = 'variant-img';
+                img.addEventListener('click', () => openImageModal(variante, prod.nombre, prod.categoria));
+
+                const vTitle = document.createElement('div');
+                vTitle.className = 'variant-title';
+                vTitle.textContent = variante.nombre || prod.nombre || 'Producto';
+
+                const vCat = document.createElement('div');
+                vCat.className = 'variant-category';
+                vCat.textContent = variante.categoria || prod.categoria || 'Unisex';
+
+                const price = document.createElement('div');
+                price.className = 'price';
+                price.textContent = formatPrice(variante.precio);
+
+                item.appendChild(img);
+                item.appendChild(vTitle);
+                item.appendChild(vCat);
+                item.appendChild(price);
+                list.appendChild(item);
+            });
+
+            card.appendChild(list);
+            catalogDiv.appendChild(card);
+        });
+    }
+
+    function initEvents() {
+        const adminToggleBtn = document.getElementById('adminToggleBtn');
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminPasswordInput = document.getElementById('adminPasswordInput');
+        const multiPhotosInput = document.getElementById('multiPhotosInput');
+        const saveProductBtn = document.getElementById('saveProductBtn');
+        const filterBar = document.getElementById('categoryFilterBar');
+        const modal = document.getElementById('imageModal');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        if (adminToggleBtn) {
+            adminToggleBtn.addEventListener('click', toggleAdminView);
+        }
+
+        if (adminLoginBtn) {
+            adminLoginBtn.addEventListener('click', verifyAdminPassword);
+        }
+
+        if (adminPasswordInput) {
+            adminPasswordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') verifyAdminPassword();
+            });
+        }
+
+        if (multiPhotosInput) {
+            multiPhotosInput.addEventListener('change', () => handleMultiplePhotos(multiPhotosInput));
+        }
+
+        if (saveProductBtn) {
+            saveProductBtn.addEventListener('click', saveProduct);
+        }
+
+        if (filterBar) {
+            filterBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('.filter-btn');
+                if (!btn) return;
+                selectedCategoryFilter = btn.dataset.filter || 'Todos';
+                filterBar.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderCatalog();
+            });
+        }
+
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', closeImageModal);
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeImageModal();
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeImageModal();
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initEvents();
+        renderCatalog();
+    });
+})();
+</script>
+</body>
+</html>
